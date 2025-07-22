@@ -45,7 +45,7 @@ const userProfileList = [
 const user = localStorage.getItem("user");
 const userData = JSON.parse(user);
 
-const logaout = async() => {
+const logout = async() => {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
   await router.push("/login");
@@ -111,7 +111,7 @@ const logaout = async() => {
                 color="error"
                 size="small"
                 append-icon="ri-logout-box-r-line"
-                @click="logaout()"
+                @click="logout()"
               >
                 Logout
               </VBtn>
