@@ -1,24 +1,55 @@
 <script setup lang="ts">
-import data from "@/views/js/jsdatatable.js";
+import EditRolDialog from "@/components/elements/rol/EditRolDialog.vue";
+import { onMounted, watch } from "vue";
 
+//import data from "@/views/js/jsdatatable.js";
+const data = ref([]);
+const paginador = async () => {
+  const resp = await $api("/rol?search=" + (searchQuery.value ?? ""), {
+    method: "GET",
+    onResponseError({ response }) {
+      console.error(response._data.error);
+    },
+  });
+  data.value = resp.roles;
+};
+const editItem = (item: any) => {
+  role_selected.value = item;
+  isEditRolDialogVisible.value = true;
+};
+const deleteItem = (item: any) => {
+  role_selected_deleted.value = item;
+  isDeleteRolDialogVisible.value = true;
+};
+onMounted(() => {
+  paginador();
+});
 const headers = [
-  { title: "NAME", key: "fullName" },
-  { title: "EMAIL", key: "email" },
-  { title: "DATE", key: "startDate" },
-  { title: "SALARY", key: "salary" },
-  { title: "AGE", key: "age" },
-  { title: "STATUS", key: "status" },
+  { title: "id", key: "id" },
+  { title: "Rol", key: "name" },
+  { title: "Permisos", key: "permissions_pluck" },
+  { title: "Fecha", key: "created_at" },
+  { title: "Acciones", key: "actions", sortable: false },
 ];
 
-const resolveStatusVariant = (status: number) => {
-  if (status === 1) return { color: "primary", text: "Current" };
-  else if (status === 2) return { color: "success", text: "Professional" };
-  else if (status === 3) return { color: "error", text: "Rejected" };
-  else if (status === 4) return { color: "warning", text: "Resigned" };
-  else return { color: "info", text: "Applied" };
-};
 const searchQuery = ref("");
 const isAddRolDialogVisible = ref(false);
+const isEditRolDialogVisible = ref(false);
+const isDeleteRolDialogVisible = ref(false);
+const role_selected = ref(null);
+const role_selected_deleted = ref(null);
+
+watch(isEditRolDialogVisible, (event) => {
+  if(event === false) {
+    role_selected.value = null;
+  }
+  
+});
+  watch(isDeleteRolDialogVisible, (event) => {
+    if(event === false) {
+      role_selected_deleted.value = null;
+    }
+  });
 </script>
 
 <template>
@@ -36,6 +67,7 @@ const isAddRolDialogVisible = ref(false);
             style="inline-size: 200px"
             density="compact"
             class="me-3"
+            @keyup.enter="paginador"
           />
         </div>
 
@@ -55,45 +87,56 @@ const isAddRolDialogVisible = ref(false);
         :headers="headers"
         :items="data"
         :items-per-page="5"
-        show-select
         class="text-no-wrap"
       >
-        <!-- full name -->
-        <template #item.fullName="{ item }">
-          <div class="d-flex align-center">
-            <VAvatar
-              size="32"
-              :color="item.avatar ? '' : 'primary'"
-              :class="item.avatar ? '' : 'v-avatar-light-bg primary--text'"
-              :variant="!item.avatar ? 'tonal' : undefined"
-            >
-              <VImg v-if="item.avatar" :src="item.avatar" />
-              <span v-else class="text-sm">{{
-                avatarText(item.fullName)
-              }}</span>
-            </VAvatar>
-            <div class="d-flex flex-column ms-3">
-              <span
-                class="d-block font-weight-medium text-high-emphasis text-truncate"
-                >{{ item.fullName }}</span
-              >
-              <small>{{ item.post }}</small>
-            </div>
-          </div>
+        <template #item.id="{ item }">
+          <span class="text-sm">{{ item.id }}</span>
         </template>
-
-        <!-- status -->
-        <template #item.status="{ item }">
-          <VChip
-            :color="resolveStatusVariant(item.status).color"
-            class="font-weight-medium"
-            size="small"
-          >
-            {{ resolveStatusVariant(item.status).text }}
-          </VChip>
+        <template #item.permissions_pluck="{ item }">
+          <ul>
+            <li
+              v-for="(permission, index) in item.permissions_pluck"
+              :key="index"
+            >
+              <span class="text-sm">{{ permission }}</span>
+            </li>
+          </ul>
+        </template>
+        <!-- acciones-->
+        <template #item.actions="{ item }">
+          <div class="d-flex gap-2">
+            <VBtn
+              color="primary"
+              size="small"
+              prepend-icon="ri-edit-line"
+              @click="editItem(item)"
+            >
+              Editar
+            </VBtn>
+            <VBtn
+              color="error"
+              size="small"
+              prepend-icon="ri-delete-bin-5-line"
+              @click="deleteItem(item)"
+            >
+              Eliminar
+            </VBtn>
+          </div>
         </template>
       </VDataTable>
     </VCard>
-    <AddRolDialog v-model:is-dialog-visible="isAddRolDialogVisible" />
+    <AddRolDialog v-model:is-dialog-visible="isAddRolDialogVisible" @addRole="paginador"/>
+    <EditRolDialog
+      v-if="role_selected"
+      v-model:is-dialog-visible="isEditRolDialogVisible"
+      :role_selected="role_selected"
+       @addRole="paginador"
+    />
+    <DeleteRolDialog
+      v-if="role_selected_deleted"
+      v-model:is-dialog-visible="isDeleteRolDialogVisible"
+      :role_selected_deleted="role_selected_deleted"
+       @addRole="paginador"
+    />
   </div>
 </template>

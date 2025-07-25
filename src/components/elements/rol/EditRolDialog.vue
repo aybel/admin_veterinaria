@@ -1,7 +1,13 @@
 <script setup>
+import { onMounted } from "vue";
+
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
+    required: true,
+  },
+  role_selected: {
+    type: Object,
     required: true,
   },
 });
@@ -10,6 +16,7 @@ const dialogVisibleUpdate = (val) => {
   emit("update:isDialogVisible", val);
 };
 const LIST_PERMISSIONS = PERMISOS;
+const role_selected = ref(null);
 const rolName = ref("");
 const arrPermissions = ref([]);
 const success = ref(null);
@@ -33,8 +40,8 @@ const store = async () => {
     return;
   }
   try {
-    const response = await $api("/rol", {
-      method: "POST",
+    const response = await $api("/rol/" + role_selected.value.id, {
+      method: "PATCH",
       body: JSON.stringify({
         name: rolName.value,
         permissions: arrPermissions.value,
@@ -49,21 +56,21 @@ const store = async () => {
       warning.value = data.message_text;
       return;
     } else if (data.message == 200) {
-      success.value = "Rol guardado correctamente";
+      success.value = "Rol editado correctamente";
+      emit("addRole", true);
       setTimeout(() => {
-        success.value = null;
         dialogVisibleUpdate(false);
-        emit("addRole", true);
-        rolName.value = "";
-        arrPermissions.value = [];
-        error_exists.value = null;
-        warning.value = null;
       }, 1500);
     }
   } catch (error) {
-    warning.value = error.message || "Error al guardar el rol";
+    warning.value = error.message || "Error al editar el rol";
   }
 };
+onMounted(() => {
+  role_selected.value = props.role_selected;
+  rolName.value = role_selected.value ? role_selected.value.name : "";
+  arrPermissions.value = role_selected.value.permissions_pluck || [];
+});
 </script>
 
 <template>
@@ -82,9 +89,11 @@ const store = async () => {
 
       <VCardText class="pa-5">
         <div class="mb-6">
-          <h4 class="text-h4 text-center mb-2">Agregar rol</h4>
+          <h4 class="text-h4 text-center mb-2" v-if="role_selected">
+            Editar rol: {{ role_selected.id }}
+          </h4>
           <p class="text-center">
-            Agrega un nuevo rol y asigna los permisos correspondientes.
+            Edita un rol existente y asigna los permisos correspondientes.
           </p>
         </div>
         <VTextField
@@ -113,7 +122,7 @@ const store = async () => {
         <!-- <VBtn variant="text" @click="emit('update:isDialogVisible', false)">
           Cancelar
         </VBtn> -->
-        <VBtn color="primary" @click="store"> Guardar </VBtn>
+        <VBtn color="primary" @click="store"> Editar </VBtn>
       </VCardActions>
       <VCardText class="pa-5">
         <VTable>
@@ -123,7 +132,6 @@ const store = async () => {
               <th class="text-uppercase">Permisos</th>
             </tr>
           </thead>
-
           <tbody>
             <tr v-for="item in LIST_PERMISSIONS" :key="item.permisos">
               <td>
@@ -131,7 +139,9 @@ const store = async () => {
               </td>
               <td>
                 <VCheckbox
+                  v-model="arrPermissions"
                   v-for="perm in item.permisos"
+                  :value="perm.permiso"
                   :key="perm.permiso"
                   :label="perm.name"
                   class="me-2"
