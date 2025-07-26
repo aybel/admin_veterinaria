@@ -40,16 +40,15 @@ const role_selected = ref(null);
 const role_selected_deleted = ref(null);
 
 watch(isEditRolDialogVisible, (event) => {
-  if(event === false) {
+  if (event === false) {
     role_selected.value = null;
   }
-  
 });
-  watch(isDeleteRolDialogVisible, (event) => {
-    if(event === false) {
-      role_selected_deleted.value = null;
-    }
-  });
+watch(isDeleteRolDialogVisible, (event) => {
+  if (event === false) {
+    role_selected_deleted.value = null;
+  }
+});
 </script>
 
 <template>
@@ -125,18 +124,21 @@ watch(isEditRolDialogVisible, (event) => {
         </template>
       </VDataTable>
     </VCard>
-    <AddRolDialog v-model:is-dialog-visible="isAddRolDialogVisible" @addRole="paginador"/>
+    <AddRolDialog
+      v-model:is-dialog-visible="isAddRolDialogVisible"
+      @addRole="paginador"
+    />
     <EditRolDialog
       v-if="role_selected"
       v-model:is-dialog-visible="isEditRolDialogVisible"
       :role_selected="role_selected"
-       @addRole="paginador"
+      @addRole="paginador"
     />
     <DeleteRolDialog
       v-if="role_selected_deleted"
       v-model:is-dialog-visible="isDeleteRolDialogVisible"
       :role_selected_deleted="role_selected_deleted"
-       @addRole="paginador"
+      @addRole="paginador"
     />
   </div>
 </template>
