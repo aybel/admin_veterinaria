@@ -20,7 +20,7 @@ const isEditStaffDialogVisible = ref(false);
 const isDeleteStaffDialogVisible = ref(false);
 const user_selected_deleted = ref(null);
 const data = ref([]);
-
+const roles = ref([]);
 onMounted(() => {
   paginador();
 });
@@ -32,6 +32,7 @@ const paginador = async () => {
     },
   });
   data.value = resp.users.data;
+  roles.value = resp.roles;
 };
 
 watch(isEditStaffDialogVisible, (event) => {
@@ -134,6 +135,7 @@ watch(isDeleteStaffDialogVisible, (event) => {
     </VDataTable>
     <AddStaffDialog
       v-model:is-dialog-visible="isAddStaffDialogVisible"
+      :roles="roles"
       @addStaff="paginador"
     />
     <EditStaffDialog
