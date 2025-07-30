@@ -7,18 +7,18 @@ import { VFileInput } from "vuetify/components";
 const error_exists = ref(null);
 const warning = ref(null);
 const success = ref(null);
-const dialogVisibleUpdate = ref(false);
+const isDialogVisibleUpdate = ref(false);
 const FILE_AVATAR = ref(null);
 const IMAGEN_PREVIZUALIZA = ref(null);
+const roles = ref([]);
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
     default: false,
   },
-  roles: {
+  rolesProp: {
     type: Object,
     required: true,
-    default: () => ({}),
   },
 });
 const form = ref({
@@ -33,19 +33,36 @@ const form = ref({
   password: null,
   desgination: null,
 });
-const roles = ref([]);
 
 const emit = defineEmits(["update:isDialogVisible", "addStaff"]);
-
+const dialogVisibleUpdate = (value) => {
+  emit("update:isDialogVisible", value);
+};
 const store = async () => {
   warning.value = null;
   success.value = null;
+  if (!validateForm()) {
+    return;
+  }
   try {
+    const formData = new FormData();
+    formData.append("name", form.value.name);
+    formData.append("surname", form.value.surname);
+    formData.append("phone", form.value.phone);
+    formData.append("type_document", form.value.type_document);
+    formData.append("num_document", form.value.n_document);
+    formData.append("birthday", form.value.birthday);
+    formData.append("role_id", form.value.role_id);
+    formData.append("email", form.value.email);
+    formData.append("password", form.value.password);
+    formData.append("designation", form.value.designation);
+    if (FILE_AVATAR.value) {
+      formData.append("imagen", FILE_AVATAR.value);
+    }
     const resp = await $api("/staff", {
       method: "POST",
-      body: form,
+      body: formData,
       onResponseError({ response }) {
-        console.log(response._data.error);
         error_exists.value = response._data.error;
       },
     });
@@ -59,6 +76,7 @@ const store = async () => {
         warning.value = null;
         emit("update:isDialogVisible", false);
         emit("addStaff", true);
+        clearForm();
       }, 1500);
     }
   } catch (error) {
@@ -67,7 +85,25 @@ const store = async () => {
     return;
   }
 };
-
+const clearForm = () => {
+  form.value = {
+    name: null,
+    surname: null,
+    phone: null,
+    type_document: "INE",
+    n_document: null,
+    birthday: null,
+    role_id: null,
+    email: null,
+    password: null,
+    desgination: null,
+  };
+  FILE_AVATAR.value = null;
+  IMAGEN_PREVIZUALIZA.value = null;
+  error_exists.value = null;
+  warning.value = null;
+  success.value = null;
+};
 const loadFile = ($event) => {
   if ($event.target.files[0].type.indexOf("image") < 0) {
     FILE_AVATAR.value = null;
@@ -81,10 +117,56 @@ const loadFile = ($event) => {
   reader.readAsDataURL(FILE_AVATAR.value);
   reader.onloadend = () => (IMAGEN_PREVIZUALIZA.value = reader.result);
 };
+const validateForm = () => {
+  error_exists.value = null;
+  warning.value = null;
 
+  if (!form.value.name) {
+    warning.value = "El nombre es obligatorio.";
+    return false;
+  }
+  if (!form.value.surname) {
+    warning.value = "El apellido es obligatorio.";
+    return false;
+  }
+  if (!form.value.phone) {
+    warning.value = "El teléfono es obligatorio.";
+    return false;
+  }
+  if (!form.value.type_document) {
+    warning.value = "El tipo de documento es obligatorio.";
+    return false;
+  }
+  if (!form.value.n_document) {
+    warning.value = "El número de documento es obligatorio.";
+    return false;
+  }
+  if (!form.value.birthday) {
+    warning.value = "La fecha de nacimiento es obligatoria.";
+    return false;
+  }
+  if (!form.value.role_id) {
+    warning.value = "El rol es obligatorio.";
+    return false;
+  }
+  if (!form.value.email) {
+    warning.value = "El correo electrónico es obligatorio.";
+    return false;
+  }
+  // Simple email regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(form.value.email)) {
+    warning.value = "El correo electrónico no es válido.";
+    return false;
+  }
+  if (!form.value.password) {
+    warning.value = "La contraseña es obligatoria.";
+    return false;
+  }
+  return true;
+};
 onMounted(() => {
-  roles.value = props.roles;
-  console.log("Roles loaded:", roles.value);
+  roles.value = props.rolesProp;
 });
 </script>
 <template>
@@ -106,7 +188,23 @@ onMounted(() => {
           <h4 class="text-h4 text-center mb-2">Agregar usuario</h4>
           <p class="text-center">Agrega un nuevo usuario.</p>
         </div>
-
+        <VRow>
+          <VAlert
+            v-if="warning"
+            type="warning"
+            class="mt-4"
+            dismissible
+            @click:close="warning = null"
+          >
+            <strong>{{ warning }}</strong>
+          </VAlert>
+          <VAlert type="error" class="my-2" v-if="error_exists">
+            Error presentado: <strong>{{ error_exists }}</strong>
+          </VAlert>
+          <VAlert type="success" class="my-2" v-if="success">
+            <strong>{{ success }}</strong>
+          </VAlert>
+        </VRow>
         <VRow>
           <VCol cols="12">
             <VTextField
@@ -165,7 +263,11 @@ onMounted(() => {
               label="Rol:"
               :items="roles"
               v-model="form.role_id"
+              item-title="name"
+              item-value="id"
+              placeholder="Seleccione el rol del usuario"
               required
+              eager
             />
           </VCol>
           <VCol cols="12">
@@ -208,27 +310,14 @@ onMounted(() => {
               alt="Previsualización de imagen"
               class="mt-2 text-center"
               style="max-width: 50%; height: auto"
+              width="177"
+              height="136"
             />
             <span v-else class="text-sm text-secondary">
               No hay imagen seleccionada
             </span>
           </VCol>
         </VRow>
-        <VAlert
-          v-if="warning"
-          type="warning"
-          class="mt-4"
-          dismissible
-          @click:close="warning = null"
-        >
-          <strong>{{ warning }}</strong>
-        </VAlert>
-        <VAlert type="error" class="my-2" v-if="error_exists">
-          Error presentado: <strong>{{ error_exists }}</strong>
-        </VAlert>
-        <VAlert type="success" class="my-2" v-if="success">
-          <strong>{{ success }}</strong>
-        </VAlert>
       </VCardText>
       <VCardActions class="d-flex justify-end">
         <VBtn color="primary" @click="store"> Guardar </VBtn>

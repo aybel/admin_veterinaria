@@ -86,7 +86,7 @@ watch(isDeleteStaffDialogVisible, (event) => {
       <template #item.id="{ item }">
         <span class="text-sm">{{ item.id }}</span>
       </template>
-
+      
       <template #item.imagen="{ item }">
         <div class="d-flex align-center">
           <VAvatar
@@ -135,7 +135,7 @@ watch(isDeleteStaffDialogVisible, (event) => {
     </VDataTable>
     <AddStaffDialog
       v-model:is-dialog-visible="isAddStaffDialogVisible"
-      :roles="roles"
+      :rolesProp="roles"
       @addStaff="paginador"
     />
     <EditStaffDialog
